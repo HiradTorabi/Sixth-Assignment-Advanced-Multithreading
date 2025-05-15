@@ -13,29 +13,75 @@ public class BankAccount {
         this.balance = initialBalance;
     }
 
-    public int getId(){
+    public int getId()
+    {
         return  id;
     }
-    public int getBalance() {
-        // TODO: Consider locking (if needed)
-        return balance;
+    public int getBalance()
+    {
+        lock.lock();
+        try
+        {
+            return balance;
+        }
+        finally
+        {
+            lock.unlock();
+        }
     }
 
     public Lock getLock() {
         return lock;
     }
 
-    public void deposit(int amount) {
-        // TODO: Safely add to balance.
+    public void deposit(int amount)
+    {
+        lock.lock();
+        try
+        {
+            balance += amount;
+        }
+        finally
+        {
+            lock.unlock();
+        }
     }
 
-    public void withdraw(int amount) {
-        // TODO: Safely withdraw from balance.
+    public void withdraw(int amount)
+    {
+        lock.lock();
+        try
+        {
+            balance -= amount;
+        }
+        finally
+        {
+            lock.unlock();
+        }
     }
 
     public void transfer(BankAccount target, int amount) {
         // TODO: Safely make the changes
         // HINT: Both accounts need to be locked, while the changes are being made
         // HINT: Be cautious of potential deadlocks.
+        if (target == this)
+        {
+            deposit(amount);
+            return;
+        }
+        BankAccount first  = (this.id < target.id) ? this   : target;
+        BankAccount second = (this.id < target.id) ? target : this;
+        first.lock.lock();
+        second.lock.lock();
+        try
+        {
+            this.balance  -= amount;
+            target.balance += amount;
+        }
+        finally
+        {
+            second.lock.unlock();
+            first.lock.unlock();
+        }
     }
 }
